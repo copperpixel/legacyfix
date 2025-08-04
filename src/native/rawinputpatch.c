@@ -1,64 +1,80 @@
 #include <stdio.h>
 #include <stdbool.h>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "legacyfixnative.h"
 
-HWND g_hWnd = NULL;
+WNDPROC g_pOriginalWndProc = NULL;
 
-static WNDPROC s_originalWndProc = NULL;
-
-static int s_nDeltaX = 0;
-static int s_nDeltaY = 0;
+int g_nDeltaX = 0;
+int g_nDeltaY = 0;
 
 LRESULT CALLBACK WndProc_Hook( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
 	if ( msg == WM_INPUT )
 	{
-		UINT unSize = 0;
-		GetRawInputData( ( HRAWINPUT )lParam, RID_INPUT, NULL, &unSize, sizeof( RAWINPUTHEADER ) );
+		UINT cbSize = 0;
+		GetRawInputData( ( HRAWINPUT )lParam, RID_INPUT, NULL, &cbSize, sizeof( RAWINPUTHEADER ) );
 
-		BYTE *pData = ( BYTE * )_alloca( unSize );
-		if ( GetRawInputData( ( HRAWINPUT )lParam, RID_INPUT, pData, &unSize, sizeof( RAWINPUTHEADER ) ) == unSize )
+		BYTE *pData = ( BYTE * )_alloca( cbSize );
+		if ( GetRawInputData( ( HRAWINPUT )lParam, RID_INPUT, pData, &cbSize, sizeof( RAWINPUTHEADER ) ) == cbSize )
 		{
 			RAWINPUT *pRaw = ( RAWINPUT * )pData;
 			if ( pRaw->header.dwType == RIM_TYPEMOUSE )
 			{
-				s_nDeltaX += pRaw->data.mouse.lLastX;
-				s_nDeltaY += pRaw->data.mouse.lLastY;
+				g_nDeltaX += pRaw->data.mouse.lLastX;
+				g_nDeltaY += pRaw->data.mouse.lLastY;
 			}
 		}
 	}
 
-	return CallWindowProc( s_originalWndProc, hWnd, msg, wParam, lParam );
+	return CallWindowProc( g_pOriginalWndProc, hWnd, msg, wParam, lParam );
 }
 
-DLLEXPORT void InitRawInputPatch( void *hWnd )
+DLLEXPORT void STDCALL InitRawInputPatch( void )
 {
-	g_hWnd = ( HWND )hWnd;
-
-	RAWINPUTDEVICE rid;
-	rid.usUsagePage = 0x01;
-	rid.usUsage = 0x02;
-	rid.dwFlags = RIDEV_INPUTSINK;
-	rid.hwndTarget = g_hWnd;
-
-	if ( RegisterRawInputDevices( &rid, 1, sizeof( rid ) ) )
+	DWORD dwJavaPid = GetCurrentProcessId();
+	HWND hWnd = FindWindow( NULL, NULL );
+	while ( hWnd )
 	{
-		s_originalWndProc = ( WNDPROC )( LONG_PTR )GetWindowLongPtr( g_hWnd, GWLP_WNDPROC );
-		SetWindowLongPtr( g_hWnd, GWLP_WNDPROC, ( LONG_PTR )WndProc_Hook );
+		DWORD dwWindowPid;
+		GetWindowThreadProcessId( hWnd, &dwWindowPid );
+		if ( dwWindowPid == dwJavaPid )
+		{
+			RAWINPUTDEVICE rid;
+			rid.usUsagePage = 0x01;
+			rid.usUsage = 0x02;
+			rid.dwFlags = RIDEV_INPUTSINK;
+			rid.hwndTarget = hWnd;
+
+			if ( RegisterRawInputDevices( &rid, 1, sizeof( rid ) ) )
+			{
+				g_pOriginalWndProc = ( WNDPROC )( LONG_PTR )GetWindowLongPtr( hWnd, GWLP_WNDPROC );
+				SetWindowLongPtr( hWnd, GWLP_WNDPROC, ( LONG_PTR )WndProc_Hook );
+			}
+
+			break;
+		}
+		hWnd = GetNextWindow( hWnd, GW_HWNDNEXT );
 	}
 }
 
-DLLEXPORT void GetDelta( int *out_pnDeltaX, int *out_pnDeltaY )
+DLLEXPORT int STDCALL GetRawDeltaX( void )
 {
-	*out_pnDeltaX = s_nDeltaX;
-	*out_pnDeltaY = s_nDeltaY;
-
-	s_nDeltaX = s_nDeltaY = 0;
+	int nTemp = g_nDeltaX;
+	g_nDeltaX = 0;
+	return nTemp;
 }
 
-DLLEXPORT bool BIsRawInputAvailable( void )
+DLLEXPORT int STDCALL GetRawDeltaY( void )
 {
-	return s_originalWndProc != NULL;
+	int nTemp = -g_nDeltaY;
+	g_nDeltaY = 0;
+	return nTemp;
+}
+
+DLLEXPORT bool STDCALL BIsRawInputAvailable( void )
+{
+	return g_pOriginalWndProc != NULL;
 }
