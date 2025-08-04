@@ -32,8 +32,8 @@ public class RawInputPatch extends Patch {
         create.insertAfter(
             "{" +
             "  Class nativeBridge = ClassLoader.getSystemClassLoader().loadClass(\"uk.betacraft.legacyfix.INativeBridge\");" +
-            "  Object instance = nativeBridge.getField(\"m_instance\").get(null);" +
-            "  java.lang.reflect.Method method = nativeBridge.getMethod(\"InitRawInputPatch\", new Class[0]);" +
+            "  Object instance = nativeBridge.getField(\"INSTANCE\").get(null);" +
+            "  java.lang.reflect.Method method = nativeBridge.getMethod(\"InstallRawInputHook\", new Class[0]);" +
             "  method.invoke(instance, (Object[]) null);" +
             "}"
         );
@@ -42,8 +42,8 @@ public class RawInputPatch extends Patch {
         getDX.insertBefore(
             "{" +
             "  Class nativeBridge = ClassLoader.getSystemClassLoader().loadClass(\"uk.betacraft.legacyfix.INativeBridge\");" +
-            "  Object instance = nativeBridge.getField(\"m_instance\").get(null);" +
-            "  java.lang.reflect.Method availableMethod = nativeBridge.getMethod(\"BIsRawInputAvailable\", new Class[0]);" +
+            "  Object instance = nativeBridge.getField(\"INSTANCE\").get(null);" +
+            "  java.lang.reflect.Method availableMethod = nativeBridge.getMethod(\"BIsWndProcHooked\", new Class[0]);" +
             "  if (((Boolean) availableMethod.invoke(instance, (Object[]) null)).booleanValue()) {" +
             "    java.lang.reflect.Method method = nativeBridge.getMethod(\"GetRawDeltaX\", new Class[0]);" +
             "    return ((Integer) method.invoke(instance, (Object[]) null)).intValue();" +
@@ -54,8 +54,8 @@ public class RawInputPatch extends Patch {
         getDY.insertBefore(
             "{" +
             "  Class nativeBridge = ClassLoader.getSystemClassLoader().loadClass(\"uk.betacraft.legacyfix.INativeBridge\");" +
-            "  Object instance = nativeBridge.getField(\"m_instance\").get(null);" +
-            "  java.lang.reflect.Method availableMethod = nativeBridge.getMethod(\"BIsRawInputAvailable\", new Class[0]);" +
+            "  Object instance = nativeBridge.getField(\"INSTANCE\").get(null);" +
+            "  java.lang.reflect.Method availableMethod = nativeBridge.getMethod(\"BIsWndProcHooked\", new Class[0]);" +
             "  if (((Boolean) availableMethod.invoke(instance, (Object[]) null)).booleanValue()) {" +
             "    java.lang.reflect.Method method = nativeBridge.getMethod(\"GetRawDeltaY\", new Class[0]);" +
             "    return ((Integer) method.invoke(instance, (Object[]) null)).intValue();" +

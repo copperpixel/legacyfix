@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdbool.h>
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif //_WIN32
 
 #include "legacyfixnative.h"
 
+#ifdef _WIN32
 WNDPROC g_pOriginalWndProc = NULL;
 
 int g_nDeltaX = 0;
@@ -31,9 +34,11 @@ LRESULT CALLBACK WndProc_Hook( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 	return CallWindowProc( g_pOriginalWndProc, hWnd, msg, wParam, lParam );
 }
+#endif //_WIN32
 
-DLLEXPORT void STDCALL InitRawInputPatch( void )
+DLLEXPORT void InstallRawInputHook( void )
 {
+#ifdef _WIN32
 	DWORD dwJavaPid = GetCurrentProcessId();
 	HWND hWnd = FindWindow( NULL, NULL );
 	while ( hWnd )
@@ -58,23 +63,36 @@ DLLEXPORT void STDCALL InitRawInputPatch( void )
 		}
 		hWnd = GetNextWindow( hWnd, GW_HWNDNEXT );
 	}
+#endif //_WIN32
 }
 
-DLLEXPORT int STDCALL GetRawDeltaX( void )
+DLLEXPORT int GetRawDeltaX( void )
 {
+#ifndef _WIN32
+	return 0;
+#else
 	int nTemp = g_nDeltaX;
 	g_nDeltaX = 0;
 	return nTemp;
+#endif //!_WIN32
 }
 
-DLLEXPORT int STDCALL GetRawDeltaY( void )
+DLLEXPORT int GetRawDeltaY( void )
 {
+#ifndef _WIN32
+	return 0;
+#else
 	int nTemp = -g_nDeltaY;
 	g_nDeltaY = 0;
 	return nTemp;
+#endif //!_WIN32
 }
 
-DLLEXPORT bool STDCALL BIsRawInputAvailable( void )
+DLLEXPORT bool BIsWndProcHooked( void )
 {
+#ifndef _WIN32
+	return false;
+#else
 	return g_pOriginalWndProc != NULL;
+#endif //!_WIN32
 }

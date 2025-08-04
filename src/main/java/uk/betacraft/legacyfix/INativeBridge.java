@@ -1,15 +1,15 @@
 package uk.betacraft.legacyfix;
 
+import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.win32.StdCallLibrary;
 
-public interface INativeBridge extends StdCallLibrary {
-    INativeBridge m_instance = Native.load("LegacyFixNative", INativeBridge.class);
+public interface INativeBridge extends Library {
+    INativeBridge INSTANCE = Native.load("LegacyFixNative", INativeBridge.class);
 
     // RawInput
-    void InitRawInputPatch();
+    void InstallRawInputHook();
     int GetRawDeltaX();
     int GetRawDeltaY();
-    boolean BIsRawInputAvailable();
+    boolean BIsWndProcHooked();
 }
